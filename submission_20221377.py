@@ -222,9 +222,11 @@ class MicroNetV5EncoderV2_ASPP(nn.Module):
         return out, d2
 
 class submission_20221377(nn.Module):
-    def __init__(self, in_channels: int, num_classes: int, ch: tuple = (8, 14, 16), interpolate: bool = True):
+    def __init__(self, in_channels: int, num_classes: int):
         super().__init__()
         self.interpolate = interpolate
+        ch = (8, 14, 16)
+        interpolate = True
         c1, c2, c3 = ch
         self.encoder = MicroNetV5EncoderV2_ASPP(in_channels, ch=ch, rates=(6,12,18))
         self.aux_ds = MicroDownsampleModuleV2(in_channels, c1)
@@ -235,8 +237,18 @@ class submission_20221377(nn.Module):
         self.fusion_conv = SeparableConv2d(c1 + c2, c2, k=3, s=1, p=1)
         self.head_conv = nn.Conv2d(c2, num_classes, 1)
     def forward(self, x):
-        input_size = x.shape[2:]; enc, skip = self.encoder(x); aux = self.aux_ref(self.aux_ds(x)); y = self.up1(enc)
-        if y.size(2) != skip.size(2) or y.size(3) != skip.size(3): y = F.interpolate(y, size=skip.shape[2:], mode='bilinear', align_corners=False)
-        y = y + skip; y = self.up_mid(y); y = self.final_up(y); y = torch.cat([y, aux], dim=1); y = self.fusion_conv(y); out = self.head_conv(y)
-        if self.interpolate and out.shape[2:] != input_size: out = F.interpolate(out, size=input_size, mode="bilinear", align_corners=True)
+        input_size = x.shape[2:]
+        enc, skip = self.encoder(x)
+        aux = self.aux_ref(self.aux_ds(x))
+        y = self.up1(enc)
+        if y.size(2) != skip.size(2) or y.size(3) != skip.size(3):
+            y = F.interpolate(y, size=skip.shape[2:], mode='bilinear', align_corners=False)
+        y = y + skip
+        y = self.up_mid(y)
+        y = self.final_up(y)
+        y = torch.cat([y, aux], dim=1)
+        y = self.fusion_conv(y)
+        out = self.head_conv(y)
+        if self.interpolate and out.shape[2:] != input_size:
+            out = F.interpolate(out, size=input_size, mode="bilinear", align_corners=True)
         return out
