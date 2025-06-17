@@ -226,7 +226,7 @@ class submission_20221377(nn.Module):
         super().__init__()
         interpolate = True
         self.interpolate = interpolate
-        ch = (8, 14, 16)
+        ch = (8, 14, 18)
         c1, c2, c3 = ch
         self.encoder = MicroNetV5EncoderV2_ASPP(in_channels, ch=ch, rates=(6,12,18))
         self.aux_ds = MicroDownsampleModuleV2(in_channels, c1)
